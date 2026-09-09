@@ -1,6 +1,4 @@
+# disabled on the seal fork: dependency-graph / "Graph Update" runs add noise
+# and can fail. The `updates` list is intentionally empty.
 version: 2
-updates:
-  - package-ecosystem: 'github-actions'
-    directory: '/'
-    schedule:
-      interval: monthly
+updates: []
