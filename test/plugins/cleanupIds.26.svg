@@ -1,0 +1,28 @@
+Deoptimize when a JavaScript URI is used in an href, even when the URI scheme
+is written with uppercase characters, as the script may reference IDs.
+
+===
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:uwu="http://www.w3.org/1999/xlink">
+    <a href="JAVASCRIPT:void document.getElementById('circle001')">
+        <text y="20">uwu</text>
+    </a>
+    <a uwu:href="JavaScript:void document.getElementById('circle002')">
+        <text y="30">uwu</text>
+    </a>
+    <circle id="circle001" fill="red" cx="60" cy="60" r="50"/>
+    <circle id="circle002" fill="blue" cx="60" cy="60" r="40"/>
+</svg>
+
+@@@
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:uwu="http://www.w3.org/1999/xlink">
+    <a href="JAVASCRIPT:void document.getElementById('circle001')">
+        <text y="20">uwu</text>
+    </a>
+    <a uwu:href="JavaScript:void document.getElementById('circle002')">
+        <text y="30">uwu</text>
+    </a>
+    <circle id="circle001" fill="red" cx="60" cy="60" r="50"/>
+    <circle id="circle002" fill="blue" cx="60" cy="60" r="40"/>
+</svg>
