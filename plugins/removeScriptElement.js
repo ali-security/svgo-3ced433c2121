@@ -15,11 +15,13 @@ const eventAttrs = [
   ...attrsGroups.graphicalEvent,
 ];
 
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+
+/** Namespaces that support SVG <a> elements. */
+const ANCHOR_NAMESPACES = [SVG_NAMESPACE];
+
 /** Namespaces that support executable <script> elements. */
-const SCRIPT_NAMESPACES = [
-  'http://www.w3.org/2000/svg',
-  'http://www.w3.org/1999/xhtml',
-];
+const SCRIPT_NAMESPACES = [SVG_NAMESPACE, 'http://www.w3.org/1999/xhtml'];
 
 /**
  * @param {string} elem
@@ -37,7 +39,14 @@ function isNamespaceAwareElem(elem, targetElem, prefixes, targetNamespaces) {
     const [prefix, effectiveTag] = elem.split(':', 2);
 
     if (targetElem === effectiveTag) {
-      const namespaces = /** @type {string[]} */ (prefixes.get(prefix));
+      const namespaces = prefixes.get(prefix);
+
+      // Prefixes bound by the parser itself rather than by an xmlns
+      // declaration, such as `xml`, never map to a target namespace.
+      if (namespaces == null || namespaces.length === 0) {
+        return false;
+      }
+
       const namespace = namespaces[namespaces.length - 1];
       return targetNamespaces.includes(namespace);
     }
@@ -94,6 +103,15 @@ exports.fn = () => {
         }
       },
       exit: (node, parentNode) => {
+        // Resolved before the prefixes declared by this node are popped, as
+        // an anchor may declare the namespace prefix it's using itself.
+        const isAnchor = isNamespaceAwareElem(
+          node.name,
+          'a',
+          prefixes,
+          ANCHOR_NAMESPACES,
+        );
+
         for (const k of Object.keys(node.attributes)) {
           if (!k.startsWith('xmlns:')) {
             continue;
@@ -103,7 +121,7 @@ exports.fn = () => {
           /** @type {string[]} */ (prefixes.get(prefix)).pop();
         }
 
-        if (node.name !== 'a') {
+        if (!isAnchor) {
           return;
         }
 
@@ -111,7 +129,11 @@ exports.fn = () => {
           if (attr === 'href' || attr.endsWith(':href')) {
             if (
               node.attributes[attr] == null ||
+              // Browsers remove ASCII tabs and newlines from URLs before
+              // parsing them. Normalize them here too so they cannot be
+              // embedded in a scheme name.
               !node.attributes[attr]
+                .replace(/[\t\n\r]/g, '')
                 .trimStart()
                 .toLowerCase()
                 .startsWith('javascript:')
